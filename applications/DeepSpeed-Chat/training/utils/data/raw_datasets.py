@@ -64,7 +64,7 @@ class OpenAITLDRDataset(PromptRawDataset):
                     "title: " + sample["info"]["title"],
                     "post: " + sample["info"]["post"],
             ]
-            )
+        )
 
     def get_chosen(self, sample):
 
@@ -88,6 +88,55 @@ class OpenAITLDRDataset(PromptRawDataset):
         return self.get_prompt(sample) + "\n\n" + self.get_rejected(sample)
 
 
+## SLF 5K Dataset
+class SLF5K(PromptRawDataset):
+
+    def __init__(self, output_path, seed, local_rank):
+        super().__init__(output_path, seed, local_rank)
+        self.dataset_name = "JeremyAlain/SLF5K"
+        self.dataset_name_clean = "JeremyAlain_SLF5K"
+        self.raw_datasets = load_dataset("JeremyAlain/SLF5K").shuffle()
+
+    def get_train_data(self):
+        return self.raw_datasets["train"]
+
+    def get_eval_data(self):
+        return self.raw_datasets["validation"]
+
+    def get_prompt(self, sample):
+        return "\n\n".join(
+            [       "Write a summary of the following Reddit post:",
+                    "subreddit: " + sample["subreddit"],
+                    "title: " + sample["title"],
+                    "post: " + sample["post"],
+            ]
+        )
+
+    def get_chosen(self, sample):
+
+        if sample["comparison_preference"] == "Summary A":
+            chosen = "generated_summary_for_comparison_A"
+        else:
+            chosen = "generated_summary_for_comparison_B"
+
+        summary = sample[chosen]
+        return summary
+
+    def get_rejected(self, sample):
+
+        if sample["comparison_preference"] == "Summary A":
+            chosen = "generated_summary_for_comparison_B"
+        else:
+            chosen = "generated_summary_for_comparison_A"
+
+        summary = sample[chosen]
+        return summary
+
+    def get_prompt_and_chosen(self, sample):
+        return self.get_prompt(sample) + "\n\n" + self.get_chosen(sample)
+
+    def get_prompt_and_rejected(self, sample):
+        return self.get_prompt(sample) + "\n\n" + self.get_rejected(sample)
 
 # English dataset
 class DahoasRmstaticDataset(PromptRawDataset):

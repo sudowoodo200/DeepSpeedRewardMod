@@ -42,6 +42,53 @@ class PromptRawDataset(object):
         return
 
 
+ ## OpenAI TLDR Dataset
+class OpenAITLDRDataset(PromptRawDataset):
+
+    def __init__(self, output_path, seed, local_rank):
+        super().__init__(output_path, seed, local_rank)
+        self.dataset_name = "openai/summarize_from_feedback"
+        self.dataset_name_clean = "openai_summarize_from_feedback"
+        self.raw_datasets = load_dataset("openai/summarize_from_feedback", "comparisons").shuffle()
+
+    def get_train_data(self):
+        return self.raw_datasets["train"]
+
+    def get_eval_data(self):
+        return self.raw_datasets["validation"]
+
+    def get_prompt(self, sample):
+        return "\n\n".join(
+            [       "Write a summary of the following Reddit post:",
+                    "subreddit: " + sample["info"]["subreddit"],
+                    "title: " + sample["info"]["title"],
+                    "post: " + sample["info"]["post"],
+            ]
+            )
+
+    def get_chosen(self, sample):
+
+        chosen_idx = sample["choices"]
+        summary = sample["summaries"][chosen_idx]["text"]
+
+        return summary
+
+    def get_rejected(self, sample):
+
+        chosen_idx = sample["choices"]
+        rejected_idx = 1 - chosen_idx
+        summary = sample["summaries"][rejected_idx]["text"]
+
+        return summary
+
+    def get_prompt_and_chosen(self, sample):
+        return self.get_prompt(sample) + "\n\n" + self.get_chosen(sample)
+
+    def get_prompt_and_rejected(self, sample):
+        return self.get_prompt(sample) + "\n\n" + self.get_rejected(sample)
+
+
+
 # English dataset
 class DahoasRmstaticDataset(PromptRawDataset):
 
